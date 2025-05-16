@@ -17,7 +17,7 @@
         "announcement-bar-0": {
           "type": "announcement",
           "settings": {
-            "text": "This is a demo store. There will be no orders fullfillment!",
+            "text": "This is a demo store. No orders will be fulfilled!",
             "link": ""
           }
         }
