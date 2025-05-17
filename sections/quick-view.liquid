@@ -1,0 +1,190 @@
+<!-- Quick View Modal -->
+<div id="quick-view-modal" class="quick-view-modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <div id="quick-view-product">
+      <!-- Product details will be dynamically loaded here -->
+    </div>
+  </div>
+</div>
+
+<script>
+// Function to open the quick view modal and fetch product data
+document.querySelectorAll('.quick-view-btn').forEach(button => {
+  button.addEventListener('click', function() {
+    const productHandle = this.getAttribute('data-product-handle');
+    showQuickViewModal(productHandle);
+  });
+});
+
+// Function to fetch product details using the product handle
+function showQuickViewModal(productHandle) {
+  const modal = document.getElementById('quick-view-modal');
+  const productContainer = document.getElementById('quick-view-product');
+
+  // Use Shopify's AJAX API to get product details by handle
+  fetch(`/products/${productHandle}.js`)
+    .then(response => response.json())
+    .then(product => {
+      let variantSelectHTML = '';
+      let selectedVariant = product.variants[0]; // Default to the first variant
+
+      // Loop through the product options and create dropdowns
+      product.options.forEach(option => {
+        variantSelectHTML += `
+          <label for="${option.name}">${option.name}</label>
+          <select id="${option.name}" class="variant-select" data-option-name="${option.name}">
+            ${option.values.map(value => {
+              return `<option value="${value}">${value}</option>`;
+            }).join('')}
+          </select>
+        `;
+      });
+
+      // Populate modal with product details and variant options
+      const productHTML = `
+        <img src="${product.images[0]}" alt="${product.title}">
+        <h2>${product.title}</h2>
+        <p>${product.description}</p>
+        <p><strong>Price:</strong> <span id="price">$${(selectedVariant.price / 100).toFixed(2)}</p>
+        ${variantSelectHTML}
+        <button class="add-to-cart">Add to Cart</button>
+      `;
+      productContainer.innerHTML = productHTML;
+
+      // Show the modal
+      modal.style.display = 'flex';
+
+      // Add event listener to "Add to Cart" button
+      document.querySelector('.add-to-cart').addEventListener('click', function() {
+        const selectedVariantId = getSelectedVariantId(product);
+        if (selectedVariantId) {
+          addToCart(selectedVariantId);
+        } else {
+          alert('Please select all options');
+        }
+      });
+
+      // Update selected variant when options change
+      document.querySelectorAll('.variant-select').forEach(select => {
+        select.addEventListener('change', function() {
+          const selectedVariantId = getSelectedVariantId(product);
+          selectedVariant = product.variants.find(v => v.id == selectedVariantId);
+          // Update price and other product details based on the selected variant
+          const priceElement = productContainer.querySelector('#price');
+          priceElement.innerText = `$${(selectedVariant.price / 100).toFixed(2)}`;
+        });
+      });
+    })
+    .catch(error => {
+      console.error('Error fetching product:', error);
+      document.getElementById('quick-view-product').textContent = 'Failed to load product details.';
+    });
+}
+
+// Function to get selected variant ID based on selected options
+function getSelectedVariantId(product) {
+  const selectedOptions = {};
+  document.querySelectorAll('.variant-select').forEach(select => {
+    const optionName = select.getAttribute('data-option-name');
+    selectedOptions[optionName] = select.value;
+  });
+
+  //console.log(selectedOptions);
+
+  // Map the selected options to the variant's option fields (option1, option2, option3)
+  const matchingVariant = product.variants.find(variant => {
+    return Object.keys(selectedOptions).every((optionName, index) => {
+      // Map selected options to the correct variant field (option1, option2, etc.)
+      return variant[`option${index + 1}`] === selectedOptions[optionName];
+    });
+  });
+
+  console.log(matchingVariant);
+
+  return matchingVariant ? matchingVariant.id : null;
+}
+
+// Function to add the selected variant to the cart
+function addToCart(variantId) {
+  fetch('/cart/add.js', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items: [{ id: variantId, quantity: 1 }] })
+  })
+  .then(response => response.json())
+  .then(data => {
+    alert('Product added to cart!');
+    // Optionally, update the cart display here
+  })
+  .catch(error => {
+    console.error('Error adding product to cart:', error);
+  });
+}
+
+// Close the modal when clicking the close button
+document.querySelector('.close-btn').addEventListener('click', function() {
+  const modal = document.getElementById('quick-view-modal');
+  modal.style.display = 'none';
+});
+</script>
+
+
+
+
+{% style %}
+/* Style for the quick view modal */
+.quick-view-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: none; /* Hidden by default */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal content */
+.modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  width: 60%;
+  max-width: 500px;
+  text-align: center;
+}
+
+/* Close button */
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+/* Styling for the product details */
+#quick-view-product {
+  margin-top: 20px;
+}
+
+#quick-view-product img {
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 20px;
+}
+
+#quick-view-product h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+#quick-view-product p {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+{% endstyle %}
