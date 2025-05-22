@@ -147,11 +147,11 @@
     },
     "content_for_index": [],
     "blocks": {
-      "5419952609722095102": {
-        "type": "shopify://apps/gift-box/blocks/head/f53ea332-e066-453a-9116-800349284dfb",
+      "1530068250781986104": {
+        "type": "shopify://apps/fbp-fast-bundle/blocks/fast_bundle/9e87fbe2-9041-4c23-acf5-322413994cef",
         "disabled": false,
         "settings": {
-          "script_load_mode": "async"
+          "home": false
         }
       }
     },
